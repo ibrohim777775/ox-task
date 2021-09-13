@@ -1,10 +1,13 @@
 import axios from 'axios';
+import { useCookies } from 'react-cookie';
+
 import {FaUserAlt, FaArrowRight} from 'react-icons/fa';
 import {RiKeyFill} from 'react-icons/ri';
 import './style.css';
 
 
 import React, { useState } from 'react';
+import { Redirect } from 'react-router';
 
 const SUBDOMAIN = 'face';
 const URL_FOR_AUTH = `https://${SUBDOMAIN}.ox-sys.com/security/auth_check`;
@@ -12,11 +15,11 @@ const URL_FOR_AUTH = `https://${SUBDOMAIN}.ox-sys.com/security/auth_check`;
 //  https://${SUBDOMAIN}.ox-sys.com/security/auth_check
 const Auth = () => {
   const [items, setItems] = useState({login:'', password: ''});
-  const [error, setError] = useState(false)
+  const [error, setError] = useState(false);
+  const [cookies,setCookies] = useCookies(['token']);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const submitHandler = (e,button) =>{
-    if (button) e.preventDefault() ;
-    console.log(items)
+  const getToken = (items) =>{
     const params = new URLSearchParams()
     params.append('_username', items.login);
     params.append('_password',items.password);
@@ -30,19 +33,30 @@ const Auth = () => {
       URL_FOR_AUTH,params,config
     )
     .then(res=>{
-      console.log(res.data)
+      // console.log(res.data)
       if (res.status === 200){
-        console.log('avtorizatsiyadan otdingiz')
-      }else{
-        setError(!error)
-      }
-      console.log(error)
+        setError(false);
+        console.log('avtorizatsiyadan otdingiz');
+        localStorage.setItem('username',items.login);
+        setCookies('token', res.data.token,{path:'/', maxAge: res.data.lifetime});
+        setIsLoggedIn(true);
+      };
+      
     })
     .catch(err=> {
       console.log(err)
       setError(true)
     })
+  };
+  const submitHandler = (e) =>{
+    e.preventDefault();
+    // console.log(items)
+    
+    if (items.login.trim().length < 3 || items.password.trim().length<3){
+      setError(true);
+    } else getToken(items);
   }
+  
   const onChangeHandler = (e)=>{
     setError(false)
     setItems({...items, [e.target.name]: e.target.value});
@@ -51,7 +65,9 @@ const Auth = () => {
   const keyPressHandler = (e) =>{
     // console.log(e.code)
     if (e.code === 'Enter'){
-      submitHandler()
+      if (items.login.trim().length < 3 || items.password.trim().length<3){
+        setError(true);
+      } else getToken(items);
     }
   }
   
@@ -71,6 +87,7 @@ const Auth = () => {
             <FaArrowRight/> 
           </button>
           <p className="error">{error ? 'Неверный логин или пароль' : ''}</p>
+          {isLoggedIn ? <Redirect to='/products'/>  : ''}
         </form>
       </div>
       <div className="auth__top"></div>

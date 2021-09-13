@@ -39,7 +39,10 @@ const Auth = () => {
         console.log('avtorizatsiyadan otdingiz');
         localStorage.setItem('username',items.login);
         setCookies('token', res.data.token,{path:'/', maxAge: res.data.lifetime});
-        setIsLoggedIn(true);
+        setTimeout(() => {
+          setIsLoggedIn(true);
+          
+        }, 3000);
       };
       
     })
